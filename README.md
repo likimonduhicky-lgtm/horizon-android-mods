@@ -1,64 +1,51 @@
 # Horizon Android Mods
 
-Attempts / notes for running popular desktop Horizon `.hnmod` native mods on **Horizon Android**.
+Notes and desktop sources for trying to use popular Horizon native mods on Android.
 
-## Hard truth
+## Target launcher tested
 
-Desktop `.hnmod` files are **source** (horizon-mixins patches).  
-Android has **no compiler**. It only loads `.hnmod` files that contain a prebuilt `lib*.so` for `aarch64-linux-android` speaking the small `horizon-native-abi` C ABI.
+**GoyDevv/Horizon-Android v1.0.0** (`Horizon-Android-v1.0.0-arm64-v8a.apk`)
 
-Most of the mods in `desktop-source/` use deep mixins (world, inventory, camera, rendering, networking). Those hooks simply do not exist in the current public Android ABI. Full ports are not possible until the Android port expands the ABI / SDK.
+Reverse-engineered from `lib/arm64-v8a/libhorizon_android.so`.
 
-## What is here
+### What this launcher actually accepts
 
-| Folder | Content |
-|--------|---------|
-| `desktop-source/` | Original extracted `.hnmod` contents (for reference) |
-| `android-scaffolds/` | Minimal Rust crates that *could* be built with `cargo-ndk` + `horizon-native-abi` for the few features that *are* possible (HUD, keys, chat commands) |
+| Format | Supported? | Details |
+|--------|------------|---------|
+| **`.hmod`** | **Yes (primary)** | Put files in the `horizon-mods/` folder. Runs in a sandbox. Explicit message in the binary: *"No mods: put .hmod files in the horizon-mods folder"* |
+| **`.hnmod`** | File-type only | Shown as "Native Mod (.hnmod)" in the picker, but **no compilation or native loading path**. Desktop source mixins do **not** run. |
+| Folder with `horizon-mod.toml` | Yes | Treated as a content mod (same path as `.hmod`) |
 
-## Feasibility
+UI tooltip from the binary:
+> "Mods made for Horizon, from the horizon-mods folder. Each runs in a sandbox and stays off until you turn it on."
 
-| Mod | Android feasibility | Notes |
-|-----|---------------------|-------|
-| fps_overlay | High | Pure HUD |
-| armor_status | Medium | Mostly HUD |
-| appleskin | Medium | Food / saturation overlay |
-| freelook / freecam_plus | Low | Needs camera hooks |
-| fast_trading | Low | Inventory UI |
-| veinminer / treefall | Very low | World / mining hooks |
-| voicechat | Extremely low | Full audio + net stack |
+`--dev-mod PATH` also exists and is documented as accepting a content mod (`.hmod` or folder).
 
-## How to build an Android mod (reference)
+### Conclusion for the uploaded mods
 
-See the official docs from the Android port you are using:
+All files originally provided (`appleskin`, `armor_status`, `fast_trading`, `fps_overlay`, `freecam_plus`, `freelook`, `treefall`, `veinminer`, `voicechat`) are **source `.hnmod`** packages containing `horizon-native.json` + `mixins/*.rs`.
 
-- https://github.com/Rayan-XOO/horizon/blob/android-port/docs/android-mods.md
+They will **not** load on this GoyDevv v1.0.0 launcher.
 
-Rough steps:
+You need either:
+1. Real **`.hmod`** (data/assets only) versions of the features, or
+2. Properly pre-built Android native libraries against a port that exposes the limited `horizon-native-abi` (this particular build does not appear to fully support that path the way some other forks do).
 
-```bash
-rustup target add aarch64-linux-android
-cargo install cargo-ndk
-# set ANDROID_NDK_HOME
-# clone the matching Horizon android-port branch
-cargo install --path crates/cargo-horizon-mod
+### How to install working content mods on this launcher
 
-# then in a crate that depends on horizon-native-abi:
-cargo horizon-mod android
-```
+1. Install the APK.
+2. Use the in-app File Manager / SAF or a file explorer that can reach the app’s storage.
+3. Place real `.hmod` files into the **`horizon-mods`** folder inside the game directory.
+4. Enable them in the Mods page (they stay off by default).
 
-## Your existing work
+### Desktop sources
 
-You already have a Horizon native mod scaffold here:  
-https://github.com/likimonduhicky-lgtm/sodium-clump
+The original extracted desktop `.hnmod` contents are kept under `desktop-source/` for reference (see commits / files).
 
-That is the correct style for **desktop**. For Android you need a completely different crate type (`cdylib` + `horizon-native-abi`).
+### Android scaffold (experimental)
 
-## Next steps if you want real Android ports
+`android-scaffolds/fps_overlay/` contains a minimal starting point written against the public `horizon-native-abi` style. It is **not** known to work with this exact GoyDevv binary without matching headers and a proper build.
 
-1. Pick the 1–2 mods that are actually useful on phone (probably fps_overlay + armor_status).
-2. Rewrite them against the limited ABI.
-3. Build the `.so` against the exact ABI version of the APK you run.
-4. Package as `.hnmod` with the `binaries` field.
+---
 
-I can help write the minimal Android versions of the HUD mods if you tell me which Android port (Starling / Rayan-XOO / GoyDevv / etc.) and version you are on.
+**Bottom line:** This launcher is built for sandboxed **`.hmod`** content mods. The native source mods you have need to be rewritten or replaced with content-mod equivalents.
