@@ -1,0 +1,16 @@
+[package]
+name = "fps_overlay"
+version = "2.0.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# Replace with the exact path or git of the horizon-native-abi that matches your APK
+# horizon-native-abi = { git = "https://github.com/Rayan-XOO/horizon", branch = "android-port" }
+# or path = "../../horizon/crates/horizon-native-abi"
+
+[profile.release]
+strip = true
+panic = "unwind"
